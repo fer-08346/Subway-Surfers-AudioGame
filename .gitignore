@@ -15,10 +15,15 @@
 *.tar.gz
 Subway Surfers Audiogame/
 
-# Decompiled APK Raw Data
+# Decompiled APK Raw Data & Temporary Storage
 sub-surf-v1/
 .tempmediaStorage/
 scratch/
+
+# Private Documents (Kept locally only)
+context.md
+audio_map.md
+*.pdf
 
 # OS Generated
 .DS_Store
