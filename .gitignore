@@ -1,0 +1,25 @@
+# Visual Studio / .NET Build Artifacts
+[Bb]in/
+[Oo]bj/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.pdb
+
+# Compiled Executables & Portable Zip
+*.exe
+*.zip
+*.7z
+*.rar
+*.tar.gz
+Subway Surfers Audiogame/
+
+# Decompiled APK Raw Data
+sub-surf-v1/
+.tempmediaStorage/
+scratch/
+
+# OS Generated
+.DS_Store
+Thumbs.db
