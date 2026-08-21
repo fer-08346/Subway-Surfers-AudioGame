@@ -12,6 +12,7 @@ namespace SubwaySurfersAudioGame.Core
         public float MusicVolume { get; set; } = 0.50f;
         public float SfxVolume { get; set; } = 0.75f;
         public SpeechMode SpeechMode { get; set; } = SpeechMode.Auto;
+        public DifficultyLevel Difficulty { get; set; } = DifficultyLevel.Normal;
         public float HighScore { get; set; } = 0.0f;
 
         // Inventory & Economy
@@ -86,6 +87,7 @@ namespace SubwaySurfersAudioGame.Core
                     MusicVolume = engine.Music.MasterMusicVolume,
                     SfxVolume = engine.AudioEngine.MasterSfxVolume,
                     SpeechMode = engine.Accessibility.Mode,
+                    Difficulty = engine.Difficulty,
                     HighScore = engine.HighScore,
 
                     TotalCoins = inv.TotalCoins,

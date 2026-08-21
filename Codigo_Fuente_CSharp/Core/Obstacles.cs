@@ -3,6 +3,13 @@ using SubwaySurfersAudioGame.Audio;
 
 namespace SubwaySurfersAudioGame.Core
 {
+    public enum DifficultyLevel
+    {
+        Easy,
+        Normal,
+        Hard
+    }
+
     public enum PowerUpType
     {
         Magnet,

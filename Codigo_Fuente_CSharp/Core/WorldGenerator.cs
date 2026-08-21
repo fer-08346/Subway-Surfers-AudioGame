@@ -13,9 +13,50 @@ namespace SubwaySurfersAudioGame.Core
         private int _letterSpawnIndex = 0;
         private float _nextTunnelSpawnZ = 800.0f;
 
+        public DifficultyLevel Difficulty { get; set; } = DifficultyLevel.Normal;
+
         private readonly Random _rng = new();
         public IReadOnlyList<TrackEntity> ActiveEntities => _activeEntities;
         public IReadOnlyList<TunnelZone> ActiveTunnels => _activeTunnels;
+
+        /// <summary>
+        /// Tunables that shape how the obstacle density and train frequency ramp up with distance.
+        /// maxGap/minGap = spacing between obstacle sections (meters); rampDistance = Z at which max difficulty is reached.
+        /// The four weights are the relative spawning probabilities for each pattern family.
+        /// </summary>
+        private readonly struct DifficultyProfile
+        {
+            public float MaxGap { get; }
+            public float MinGap { get; }
+            public float RampDistance { get; }
+            public float BarrierWeight { get; }
+            public float StaticTrainWeight { get; }
+            public float DynamicTrainWeight { get; }
+            public float PowerUpWeight { get; }
+
+            public DifficultyProfile(float maxGap, float minGap, float rampDistance,
+                float barrier, float staticTrain, float dynamicTrain, float powerUp)
+            {
+                MaxGap = maxGap;
+                MinGap = minGap;
+                RampDistance = rampDistance;
+                BarrierWeight = barrier;
+                StaticTrainWeight = staticTrain;
+                DynamicTrainWeight = dynamicTrain;
+                PowerUpWeight = powerUp;
+            }
+        }
+
+        private DifficultyProfile GetProfile()
+        {
+            return Difficulty switch
+            {
+                DifficultyLevel.Easy => new DifficultyProfile(38f, 26f, 5000f, 30f, 22f, 12f, 12f),
+                DifficultyLevel.Normal => new DifficultyProfile(30f, 14f, 3000f, 28f, 35f, 20f, 10f),
+                DifficultyLevel.Hard => new DifficultyProfile(24f, 10f, 1800f, 22f, 45f, 30f, 8f),
+                _ => new DifficultyProfile(30f, 14f, 3000f, 28f, 35f, 20f, 10f)
+            };
+        }
 
         public void Reset()
         {
@@ -66,11 +107,17 @@ namespace SubwaySurfersAudioGame.Core
 
         public void Update(float playerZ, SpatialAudioEngine audioEngine, Inventory inventory)
         {
-            // Spawn new sections ahead of the player (keep track populated up to 120m ahead)
+            var profile = GetProfile();
+            float progress = Math.Clamp(playerZ / profile.RampDistance, 0.0f, 1.0f);
+            float gap = profile.MaxGap + (profile.MinGap - profile.MaxGap) * progress;
+
+            // Spawn new sections ahead of the player (keep track populated up to 130m ahead).
+            // Section spacing shrinks as difficulty/distance grows, increasing obstacle density.
             while (_nextSpawnZ < playerZ + 130.0f)
             {
-                SpawnSection(_nextSpawnZ);
-                _nextSpawnZ += _rng.Next(25, 45);
+                SpawnSection(_nextSpawnZ, progress);
+                float variance = 0.85f + (float)_rng.NextDouble() * 0.3f;
+                _nextSpawnZ += gap * variance;
             }
 
             // Spawn Daily Word Letters (e.g. S-U-R-F-E-R-S) every ~350m
@@ -154,21 +201,31 @@ namespace SubwaySurfersAudioGame.Core
             }
         }
 
-        private void SpawnSection(float baseZ)
+        private void SpawnSection(float baseZ, float progress)
         {
-            int pattern = _rng.Next(0, 100);
+            var profile = GetProfile();
 
-            if (pattern < 35)
+            // Scale train probabilities up with progress (distance) so the run gets harder over time,
+            // faithful to the original game where density ramps with distance/speed.
+            float barrierW = profile.BarrierWeight * (1.0f - progress * 0.20f);
+            float staticW = profile.StaticTrainWeight * (1.0f + progress * 0.80f);
+            float dynamicW = profile.DynamicTrainWeight * (1.0f + progress * 1.20f);
+            float powerW = profile.PowerUpWeight;
+
+            float total = barrierW + staticW + dynamicW + powerW;
+            float roll = (float)_rng.NextDouble() * total;
+
+            if (roll < barrierW)
             {
                 // Pattern 1: Barrier and Coins (Low / High barriers)
                 SpawnBarriersAndCoins(baseZ);
             }
-            else if (pattern < 70)
+            else if (roll < barrierW + staticW)
             {
                 // Pattern 2: Static Train with Ramp or Jump Arc
-                SpawnStaticTrainSection(baseZ);
+                SpawnStaticTrainSection(baseZ, progress);
             }
-            else if (pattern < 90)
+            else if (roll < barrierW + staticW + dynamicW)
             {
                 // Pattern 3: Dynamic Incoming Train on one lane
                 SpawnDynamicTrainSection(baseZ);
@@ -213,10 +270,14 @@ namespace SubwaySurfersAudioGame.Core
             }
         }
 
-        private void SpawnStaticTrainSection(float baseZ)
+        private void SpawnStaticTrainSection(float baseZ, float progress)
         {
             Lane trainLane = (Lane)_rng.Next(-1, 2);
-            bool hasRamp = _rng.Next(2) == 0;
+
+            // Higher difficulty/distance -> fewer ramps, forcing the player to jump or switch lanes
+            // instead of simply mounting the train roof. Ramp chance drops from ~50% down to ~15%.
+            float rampChance = Math.Max(0.15f, 0.5f - progress * 0.35f);
+            bool hasRamp = (float)_rng.NextDouble() < rampChance;
 
             _activeEntities.Add(new StaticTrain
             {

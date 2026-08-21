@@ -139,6 +139,7 @@ namespace SubwaySurfersAudioGame
                 Keys.P => ConsoleKey.P,
                 Keys.H => ConsoleKey.H,
                 Keys.Q => ConsoleKey.Q,
+                Keys.U => ConsoleKey.U,
                 Keys.F1 => ConsoleKey.F1,
                 Keys.F2 => ConsoleKey.F2,
                 Keys.F3 => ConsoleKey.F3,
