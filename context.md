@@ -1,8 +1,11 @@
 # Informe Técnico del Proyecto: Subway Surfers Binaural Audiogame (.NET 8 C#)
 
 **Fecha de Actualización:** 20 de Agosto de 2026  
+**Versión Actual (`GameInfo.CurrentVersion`):** `1.0.0`  
 **Tecnología Base:** C# .NET 8 (Windows) + Motor Nativo Un4seen BASS (`bass.dll`) + NVDA Controller Client (`nvdaControllerClient64.dll`)  
-**Documento Fuente:** [`Diseño Audiogame Subway Surfers C#.pdf`](./Diseño%20Audiogame%20Subway%20Surfers%20C#.pdf)
+**Repositorio:** `fer-08346/Subway-Surfers-AudioGame` (GitHub)  
+**Documento Fuente:** [`Diseño Audiogame Subway Surfers C#.pdf`](./Diseño%20Audiogame%20Subway%20Surfers%20C#.pdf)  
+**Estado de Integración:** Dificultad escalonada + Actualizador automático **mergeados en `master`** vía PR #1 (commit `526bb71`).
 
 ---
 
@@ -18,7 +21,7 @@ El proyecto ha sido extendido siguiendo una arquitectura modular en **C# .NET 8*
 - **Caza de Letras Diaria & Modo Calibración HRTF**: Letras S-U-R-F-E-R-S procedimentales con escala armónica, resumen de muerte hablado (Post-Mortem), y Escuela de Audio interactiva para calibración de audífonos.
 - **Teclas de Diagnóstico en Vivo**: Atajos `[F1]` a `[F4]` para pruebas rápidas de transición de música, retroceso de país, tropezón del inspector y monedas.
 - **Dificultad Escalonada (Selector + Rama por Distancia)**: Nuevo `DifficultyLevel` (Fácil / Normal / Difícil) persistido en `config.json`. La densidad de obstáculos y la frecuencia de trenes escalan con la distancia recorrida (`WorldGenerator`) de forma fiel al juego original, donde el reto crece con la velocidad. En Difícil los trenes estáticos pierden rampa progresivamente, forzando salto o cambio de carril.
-- **Actualizador Automático desde Releases de GitHub**: Al iniciar, el juego consulta silenciosamente `releases/latest` del repositorio. Si hay una versión superior, anuncia por NVDA/SAPI *"Pulsa U para actualizar"* mientras suena el tema principal, y al confirmar descarga el ZIP portable, lo extrae y reinicia reemplazando la instalación.
+- **Actualizador Automático desde Releases de GitHub**: Al iniciar, el juego consulta silenciosamente `releases/latest` del repositorio `fer-08346/Subway-Surfers-AudioGame`. Si hay una versión superior a `GameInfo.CurrentVersion` (`1.0.0`), anuncia por NVDA/SAPI *"Pulsa U para actualizar"* mientras suena el tema principal, y al confirmar descarga el ZIP portable, lo extrae y reinicia reemplazando la instalación. **Requisito de empaquetado:** los releases deben etiquetarse en semver (`vX.Y.Z`) e incluir un `.zip` portable cuyos archivos estén en la **raíz** del ZIP (no dentro de una subcarpeta), para que el script de reemplazo funcione.
 
 ---
 
@@ -29,12 +32,12 @@ c:\Users\maria\Desktop\juegos\Subway Surfers\
 │
 ├── Codigo_Fuente_CSharp/             <- Código fuente modular .NET 8
 │   ├── Core/
-│   │   ├── GameEngine.cs             <- Bucle a 60 FPS, colisiones, Post-Mortem, salida rápida y estados
+│   │   ├── GameEngine.cs             <- Bucle a 60 FPS, colisiones, Post-Mortem, salida rápida, selección de dificultad y flujo de actualización (check silencioso + tecla U)
 │   │   ├── Player.cs                 <- Físicas, Fast Roll, Mid-Air Steering y Rebotes
 │   │   ├── Inventory.cs              <- Consumibles, niveles de mejora y letras del día
 │   │   ├── EconomySystem.cs          <- Tienda, precios, validación y mejoras
 │   │   ├── WorldTourSystem.cs        <- Hitos cada 2000m y transición entre países (+ pruebas manuales)
-│   │   ├── WorldGenerator.cs         <- Vallas, trenes, monedas, letras y túneles
+│   │   ├── WorldGenerator.cs         <- Vallas, trenes, monedas, letras, túneles y rampa de dificultad por distancia
 │   │   ├── Obstacles.cs              <- Modelos de entidades de pista y zonas de túnel
 │   │   ├── PursuitSystem.cs          <- Inspector y perro (posicionamiento 3D real, alerta y gracia de 1.2s)
 │   │   ├── UpdateChecker.cs          <- Consulta/descarga de Releases de GitHub y versión actual
@@ -48,7 +51,7 @@ c:\Users\maria\Desktop\juegos\Subway Surfers\
 │   ├── Accessibility/
 │   │   └── AccessibilityEngine.cs    <- P/Invoke nativo con NVDA / SAPI (sin ducking)
 │   └── UI/
-│       ├── AccessibleMenu.cs         <- Menú principal (6 opciones), tutoriales y ajustes
+│       ├── AccessibleMenu.cs         <- Menú principal (6 opciones), tutoriales, ajustes y selector de dificultad (tecla U para actualizar)
 │       ├── ShopMenu.cs               <- Tienda interactiva con NVDA
 │       └── CalibrationMenu.cs        <- Escuela de audio y calibración HRTF
 │
@@ -81,7 +84,7 @@ c:\Users\maria\Desktop\juegos\Subway Surfers\
 | **Mejoras de Potenciadores** | Niveles 1 a 5 (Costos: 500, 1500, 3000, 5000 monedas) | Cada nivel suma duración (+3s a Imán, Jetpack, Sneakers; +4s a Multiplicador). |
 | **Caza de Letras Diaria** | S-U-R-F-E-R-S | Campanilla ascendente por letra; completar otorga 1,500 monedas. |
 | **Dificultad Escalonada** | `DifficultyLevel` (Fácil / Normal / Difícil) persistido; rampa por distancia | Espaciado entre secciones de 38→26m (Fácil), 30→14m (Normal) y 24→10m (Difícil); pesos de trenes estáticos/dinámicos crecen con $Z$, y la rampa de trenes estáticos cae de ~50% a ~15% con la distancia. |
-| **Actualizador Automático** | `UpdateChecker` contra `releases/latest` de GitHub | Al iniciar comprueba versión; si hay superior, habla *"Pulsa U para actualizar"* con el tema principal y, al confirmar, descarga el ZIP, lo extrae y reinicia reemplazando la instalación. |
+| **Actualizador Automático** | `UpdateChecker` contra `releases/latest` de GitHub (`fer-08346/Subway-Surfers-AudioGame`), versión base `1.0.0` | Al iniciar comprueba versión; si hay superior, habla *"Pulsa U para actualizar"* con el tema principal y, al confirmar, descarga el ZIP, lo extrae y reinicia reemplazando la instalación. **Requiere** release semver (`vX.Y.Z`) con `.zip` portable en la raíz. |
 | **Post-Mortem Hablado** | Causa, carril, velocidad exacta en m/s y km/h, metros, monedas y letras | Verbalización completa de la partida vía NVDA/SAPI. |
 
 ---
