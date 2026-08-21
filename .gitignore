@@ -20,7 +20,9 @@ sub-surf-v1/
 .tempmediaStorage/
 scratch/
 
-# Local Only Documents & Test Scripts
+# Developer Mode Trigger & Local Scripts (Kept locally only)
+debug.txt
+.debug
 *.pdf
 test_*.py
 *.py

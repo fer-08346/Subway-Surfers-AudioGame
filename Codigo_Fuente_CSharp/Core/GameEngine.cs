@@ -38,6 +38,7 @@ namespace SubwaySurfersAudioGame.Core
 
         public float HighScore { get; private set; } = 0.0f;
         public bool IsRunning { get; private set; } = true;
+        public bool IsDebugModeEnabled { get; private set; } = false;
         public event Action? OnRequestExit;
 
         private BassSoundChannel? _jetpackLoopInstance;
@@ -46,6 +47,9 @@ namespace SubwaySurfersAudioGame.Core
 
         public GameEngine(string sfxDir, string musicDir)
         {
+            IsDebugModeEnabled = File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "debug.txt")) ||
+                                 File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".debug"));
+
             var saved = GameSettings.Load();
             HighScore = saved.HighScore;
 
@@ -639,24 +643,32 @@ namespace SubwaySurfersAudioGame.Core
                         break;
 
                     case ConsoleKey.F1:
-                        // Advance stage manually for music and country testing
-                        WorldTour.AdvanceStageManually(this);
+                        if (IsDebugModeEnabled)
+                        {
+                            WorldTour.AdvanceStageManually(this);
+                        }
                         break;
 
                     case ConsoleKey.F2:
-                        // Previous stage manually for testing
-                        WorldTour.PreviousStageManually(this);
+                        if (IsDebugModeEnabled)
+                        {
+                            WorldTour.PreviousStageManually(this);
+                        }
                         break;
 
                     case ConsoleKey.F3:
-                        // Test non-fatal stumble / inspector alert
-                        HandleObstacleHit("Prueba de tropezón", fatal: false);
+                        if (IsDebugModeEnabled)
+                        {
+                            HandleObstacleHit("Prueba de tropezón de depuración", fatal: false);
+                        }
                         break;
 
                     case ConsoleKey.F4:
-                        // Test coins
-                        Inventory.TotalCoins += 500;
-                        Accessibility.Speak($"500 monedas de prueba agregadas. Total en banco: {Inventory.TotalCoins}", interrupt: true);
+                        if (IsDebugModeEnabled)
+                        {
+                            Inventory.TotalCoins += 500;
+                            Accessibility.Speak($"[Modo Desarrollador] 500 monedas agregadas. Total en banco: {Inventory.TotalCoins}", interrupt: true);
+                        }
                         break;
 
                     case ConsoleKey.Escape:
