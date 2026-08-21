@@ -13,7 +13,7 @@ namespace SubwaySurfersAudioGame.Core
     /// </summary>
     public static class GameInfo
     {
-        public const string CurrentVersion = "1.0.0";
+        public const string CurrentVersion = "1.1.0";
         public const string RepoOwner = "fer-08346";
         public const string RepoName = "Subway-Surfers-AudioGame";
     }
