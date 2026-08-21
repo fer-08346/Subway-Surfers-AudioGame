@@ -27,6 +27,7 @@ namespace SubwaySurfersAudioGame.UI
             "Volumen de Música",
             "Volumen de Efectos de Sonido",
             "Sistema de Voz y Lector de Pantalla",
+            "Nivel de Dificultad",
             "Volver al Menú Principal"
         };
 
@@ -103,6 +104,17 @@ namespace SubwaySurfersAudioGame.UI
                 };
                 val = $": {modeStr}";
             }
+            else if (_selectedSettingsIndex == 3)
+            {
+                string diffStr = _engine.Difficulty switch
+                {
+                    DifficultyLevel.Easy => "Fácil",
+                    DifficultyLevel.Normal => "Normal",
+                    DifficultyLevel.Hard => "Difícil",
+                    _ => ""
+                };
+                val = $": {diffStr}";
+            }
 
             _engine.Accessibility.Speak($"{item}{val}. Usa flechas izquierda y derecha para cambiar. Opción {_selectedSettingsIndex + 1} de {_settingsItems.Length}", interrupt: true);
         }
@@ -134,6 +146,17 @@ namespace SubwaySurfersAudioGame.UI
                     case ConsoleKey.Enter:
                     case ConsoleKey.Spacebar:
                         ExecuteMainMenuSelection();
+                        break;
+
+                    case ConsoleKey.U:
+                        if (_engine.PendingUpdate != null)
+                        {
+                            _ = _engine.StartUpdate();
+                        }
+                        else
+                        {
+                            _engine.Accessibility.Speak("No hay actualizaciones disponibles en este momento.", interrupt: true);
+                        }
                         break;
                 }
             }
@@ -175,6 +198,13 @@ namespace SubwaySurfersAudioGame.UI
                             GameSettings.Save(_engine);
                             SpeakCurrentSettingsItem();
                         }
+                        else if (_selectedSettingsIndex == 3) // Difficulty
+                        {
+                            int prevDiff = ((int)_engine.Difficulty - 1 + 3) % 3;
+                            _engine.Difficulty = (DifficultyLevel)prevDiff;
+                            GameSettings.Save(_engine);
+                            SpeakCurrentSettingsItem();
+                        }
                         break;
 
                     case ConsoleKey.RightArrow:
@@ -199,11 +229,18 @@ namespace SubwaySurfersAudioGame.UI
                             GameSettings.Save(_engine);
                             SpeakCurrentSettingsItem();
                         }
+                        else if (_selectedSettingsIndex == 3) // Difficulty
+                        {
+                            int nextDiff = ((int)_engine.Difficulty + 1) % 3;
+                            _engine.Difficulty = (DifficultyLevel)nextDiff;
+                            GameSettings.Save(_engine);
+                            SpeakCurrentSettingsItem();
+                        }
                         break;
 
                     case ConsoleKey.Enter:
                     case ConsoleKey.Spacebar:
-                        if (_selectedSettingsIndex == 3) OpenMainMenu();
+                        if (_selectedSettingsIndex == 4) OpenMainMenu();
                         break;
 
                     case ConsoleKey.Escape:

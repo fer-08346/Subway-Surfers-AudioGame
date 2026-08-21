@@ -1,4 +1,7 @@
 using System;
+using System.Diagnostics;
+using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SubwaySurfersAudioGame.Accessibility;
@@ -37,6 +40,8 @@ namespace SubwaySurfersAudioGame.Core
         public CalibrationMenu Calibration { get; }
 
         public float HighScore { get; private set; } = 0.0f;
+        public DifficultyLevel Difficulty { get; set; } = DifficultyLevel.Normal;
+        public UpdateInfo? PendingUpdate { get; private set; }
         public bool IsRunning { get; private set; } = true;
         public bool IsDebugModeEnabled { get; private set; } = false;
         public event Action? OnRequestExit;
@@ -52,6 +57,7 @@ namespace SubwaySurfersAudioGame.Core
 
             var saved = GameSettings.Load();
             HighScore = saved.HighScore;
+            Difficulty = saved.Difficulty;
 
             // Load Inventory data
             Inventory.TotalCoins = saved.TotalCoins;
@@ -86,12 +92,32 @@ namespace SubwaySurfersAudioGame.Core
             Menu = new AccessibleMenu(this);
             Shop = new ShopMenu(this);
             Calibration = new CalibrationMenu(this);
+
+            // Silent background check for a newer release on GitHub (non-blocking).
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var info = await UpdateChecker.CheckForUpdateAsync();
+                    if (info != null)
+                    {
+                        PendingUpdate = info;
+                        Music.PlayTrack(0); // Ensure main theme is playing
+                        Accessibility.Speak(
+                            $"¡Hay una actualización disponible! Versión {info.Version}. " +
+                            $"Pulsa la tecla U para actualizar mientras suena la música.",
+                            interrupt: false);
+                    }
+                }
+                catch { }
+            });
         }
 
         public void StartGame()
         {
             Player.Reset();
             World.Reset();
+            World.Difficulty = Difficulty;
             Pursuit.Reset();
             WorldTour.Reset();
 
@@ -748,6 +774,53 @@ namespace SubwaySurfersAudioGame.Core
             {
                 OnRequestExit?.Invoke();
             });
+        }
+
+        /// <summary>
+        /// Downloads the pending update and prepares a restart that installs it over the current folder.
+        /// </summary>
+        public async Task StartUpdate()
+        {
+            if (PendingUpdate == null) return;
+
+            Accessibility.Speak("Descargando actualización, por favor espera...", interrupt: true);
+            string? extracted = await UpdateChecker.DownloadAndPrepareUpdateAsync(PendingUpdate.DownloadUrl);
+            if (extracted == null)
+            {
+                Accessibility.Speak("No se pudo descargar la actualización. Inténtalo de nuevo más tarde.", interrupt: true);
+                return;
+            }
+
+            Accessibility.Speak("Actualización lista. El juego se reiniciará para instalarla.", interrupt: true);
+            ApplyUpdateAndRestart(extracted);
+        }
+
+        private void ApplyUpdateAndRestart(string extractedDir)
+        {
+            try
+            {
+                string gameDir = AppDomain.CurrentDomain.BaseDirectory;
+                string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "";
+                string batPath = Path.Combine(Path.GetTempPath(), "SSAG_updater_" + Guid.NewGuid().ToString("N") + ".bat");
+
+                var sb = new StringBuilder();
+                sb.AppendLine("@echo off");
+                sb.AppendLine("timeout /t 1 /nobreak >nul");
+                sb.AppendLine($"xcopy /y /e /q \"{extractedDir}\" \"{gameDir}\"");
+                sb.AppendLine($"start \"\" \"{exePath}\"");
+                sb.AppendLine($"rmdir /s /q \"{extractedDir}\"");
+                sb.AppendLine("del \"%~f0\"");
+                File.WriteAllText(batPath, sb.ToString());
+
+                Process.Start(new ProcessStartInfo(batPath) { UseShellExecute = true, CreateNoWindow = true });
+            }
+            catch
+            {
+                Accessibility.Speak("No se pudo preparar la actualización automática.", interrupt: true);
+                return;
+            }
+
+            RequestExit();
         }
 
         public void Shutdown()

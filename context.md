@@ -17,6 +17,8 @@ El proyecto ha sido extendido siguiendo una arquitectura modular en **C# .NET 8*
 - **Audio Binaural Dinámico y Eliminación de Ducking**: Ducking 100% eliminado para estabilidad absoluta del volumen, capa de viento sintético en tiempo real dependiente de la velocidad $v(t)$, y procesado de túneles con reverberación DX8.
 - **Caza de Letras Diaria & Modo Calibración HRTF**: Letras S-U-R-F-E-R-S procedimentales con escala armónica, resumen de muerte hablado (Post-Mortem), y Escuela de Audio interactiva para calibración de audífonos.
 - **Teclas de Diagnóstico en Vivo**: Atajos `[F1]` a `[F4]` para pruebas rápidas de transición de música, retroceso de país, tropezón del inspector y monedas.
+- **Dificultad Escalonada (Selector + Rama por Distancia)**: Nuevo `DifficultyLevel` (Fácil / Normal / Difícil) persistido en `config.json`. La densidad de obstáculos y la frecuencia de trenes escalan con la distancia recorrida (`WorldGenerator`) de forma fiel al juego original, donde el reto crece con la velocidad. En Difícil los trenes estáticos pierden rampa progresivamente, forzando salto o cambio de carril.
+- **Actualizador Automático desde Releases de GitHub**: Al iniciar, el juego consulta silenciosamente `releases/latest` del repositorio. Si hay una versión superior, anuncia por NVDA/SAPI *"Pulsa U para actualizar"* mientras suena el tema principal, y al confirmar descarga el ZIP portable, lo extrae y reinicia reemplazando la instalación.
 
 ---
 
@@ -35,6 +37,7 @@ c:\Users\maria\Desktop\juegos\Subway Surfers\
 │   │   ├── WorldGenerator.cs         <- Vallas, trenes, monedas, letras y túneles
 │   │   ├── Obstacles.cs              <- Modelos de entidades de pista y zonas de túnel
 │   │   ├── PursuitSystem.cs          <- Inspector y perro (posicionamiento 3D real, alerta y gracia de 1.2s)
+│   │   ├── UpdateChecker.cs          <- Consulta/descarga de Releases de GitHub y versión actual
 │   │   └── GameSettings.cs           <- Serialización y persistencia en %APPDATA%\SubwaySurfersAudioGame\config.json
 │   ├── Audio/
 │   │   ├── SpatialAudioEngine.cs     <- BASS 3D, capa de viento sintético y reverb de túnel
@@ -77,6 +80,8 @@ c:\Users\maria\Desktop\juegos\Subway Surfers\
 | **Headstart (Cohete Turbo)** | Requiere $N > 0$ en inventario, activable en los primeros 150m con tecla `H` | $35\,\text{m/s}$ durante 1,000 metros con invulnerabilidad. |
 | **Mejoras de Potenciadores** | Niveles 1 a 5 (Costos: 500, 1500, 3000, 5000 monedas) | Cada nivel suma duración (+3s a Imán, Jetpack, Sneakers; +4s a Multiplicador). |
 | **Caza de Letras Diaria** | S-U-R-F-E-R-S | Campanilla ascendente por letra; completar otorga 1,500 monedas. |
+| **Dificultad Escalonada** | `DifficultyLevel` (Fácil / Normal / Difícil) persistido; rampa por distancia | Espaciado entre secciones de 38→26m (Fácil), 30→14m (Normal) y 24→10m (Difícil); pesos de trenes estáticos/dinámicos crecen con $Z$, y la rampa de trenes estáticos cae de ~50% a ~15% con la distancia. |
+| **Actualizador Automático** | `UpdateChecker` contra `releases/latest` de GitHub | Al iniciar comprueba versión; si hay superior, habla *"Pulsa U para actualizar"* con el tema principal y, al confirmar, descarga el ZIP, lo extrae y reinicia reemplazando la instalación. |
 | **Post-Mortem Hablado** | Causa, carril, velocidad exacta en m/s y km/h, metros, monedas y letras | Verbalización completa de la partida vía NVDA/SAPI. |
 
 ---
@@ -99,6 +104,7 @@ c:\Users\maria\Desktop\juegos\Subway Surfers\
 | `F2` | [Prueba] Ciudad anterior | Retroceso de música |
 | `F3` | [Prueba] Tropezón del inspector | Alerta inmediata a 1.8m a la espalda |
 | `F4` | [Prueba] +500 monedas | Recarga rápida de banco |
+| `U` | Actualizar juego (si hay release nuevo) | Descarga el ZIP portable y reinicia instalando la actualización |
 | `Escape` | Pausa de carrera / Volver al menú anterior | Pausa del motor de audio |
 
 ---
