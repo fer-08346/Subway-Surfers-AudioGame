@@ -20,10 +20,10 @@ sub-surf-v1/
 .tempmediaStorage/
 scratch/
 
-# Private Documents (Kept locally only)
-context.md
-audio_map.md
+# Local Only Documents & Test Scripts
 *.pdf
+test_*.py
+*.py
 
 # OS Generated
 .DS_Store

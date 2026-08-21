@@ -9,7 +9,6 @@ namespace SubwaySurfersAudioGame.UI
     {
         private readonly GameEngine _engine;
         private int _selectedMainMenuIndex = 0;
-        private int _selectedMusicMenuIndex = 0;
         private int _selectedSettingsIndex = 0;
         private int _selectedTutorialIndex = 0;
 
@@ -18,7 +17,6 @@ namespace SubwaySurfersAudioGame.UI
             "Jugar Carrera",
             "Tienda de Mejoras y Consumibles",
             "Escuela de Audio y Calibración HRTF",
-            "Seleccionar Música de la Gira",
             "Guía de Cómo Jugar",
             "Ajustes de Volumen y Voz",
             "Salir del Juego"
@@ -58,14 +56,6 @@ namespace SubwaySurfersAudioGame.UI
             SpeakCurrentMainMenuItem();
         }
 
-        public void OpenMusicMenu()
-        {
-            _engine.CurrentState = GameState.MusicMenu;
-            _selectedMusicMenuIndex = _engine.Music.CurrentTrackIndex;
-            _engine.AudioEngine.Play2D(AudioMap.UI.MenuBrowseTap);
-            SpeakCurrentMusicItem();
-        }
-
         public void OpenSettingsMenu()
         {
             _engine.CurrentState = GameState.SettingsMenu;
@@ -86,18 +76,6 @@ namespace SubwaySurfersAudioGame.UI
         {
             string item = _mainMenuItems[_selectedMainMenuIndex];
             _engine.Accessibility.Speak($"{item}. Opción {_selectedMainMenuIndex + 1} de {_mainMenuItems.Length}", interrupt: true);
-        }
-
-        private void SpeakCurrentMusicItem()
-        {
-            if (_engine.Music.Tracks.Count == 0)
-            {
-                _engine.Accessibility.Speak("No se encontraron pistas de música.", interrupt: true);
-                return;
-            }
-
-            var track = _engine.Music.Tracks[_selectedMusicMenuIndex];
-            _engine.Accessibility.Speak($"Pista {_selectedMusicMenuIndex + 1} de {_engine.Music.Tracks.Count}: {track.CityName} ({track.Title}). Pulsa Enter para escuchar y seleccionar.", interrupt: true);
         }
 
         private void SpeakCurrentSettingsItem()
@@ -156,42 +134,6 @@ namespace SubwaySurfersAudioGame.UI
                     case ConsoleKey.Enter:
                     case ConsoleKey.Spacebar:
                         ExecuteMainMenuSelection();
-                        break;
-                }
-            }
-            else if (_engine.CurrentState == GameState.MusicMenu)
-            {
-                switch (key.Key)
-                {
-                    case ConsoleKey.UpArrow:
-                        if (_engine.Music.Tracks.Count > 0)
-                        {
-                            _selectedMusicMenuIndex = (_selectedMusicMenuIndex - 1 + _engine.Music.Tracks.Count) % _engine.Music.Tracks.Count;
-                            _engine.AudioEngine.Play2D(AudioMap.UI.MenuBrowseTap, gain: 0.5f);
-                            SpeakCurrentMusicItem();
-                        }
-                        break;
-
-                    case ConsoleKey.DownArrow:
-                        if (_engine.Music.Tracks.Count > 0)
-                        {
-                            _selectedMusicMenuIndex = (_selectedMusicMenuIndex + 1) % _engine.Music.Tracks.Count;
-                            _engine.AudioEngine.Play2D(AudioMap.UI.MenuBrowseTap, gain: 0.5f);
-                            SpeakCurrentMusicItem();
-                        }
-                        break;
-
-                    case ConsoleKey.Enter:
-                    case ConsoleKey.Spacebar:
-                        if (_engine.Music.Tracks.Count > 0)
-                        {
-                            _engine.Music.PlayTrack(_selectedMusicMenuIndex);
-                            _engine.Accessibility.Speak($"Reproduciendo {_engine.Music.Tracks[_selectedMusicMenuIndex].CityName}. Pulsa Escape para volver al menú.", interrupt: true);
-                        }
-                        break;
-
-                    case ConsoleKey.Escape:
-                        OpenMainMenu();
                         break;
                 }
             }
@@ -315,21 +257,17 @@ namespace SubwaySurfersAudioGame.UI
                     _engine.Calibration.Open();
                     break;
 
-                case 3: // Seleccionar Música
-                    OpenMusicMenu();
-                    break;
-
-                case 4: // Guía de Cómo Jugar
+                case 3: // Guía de Cómo Jugar
                     _engine.CurrentState = GameState.TutorialMenu;
                     OpenTutorialMenu();
                     break;
 
-                case 5: // Ajustes de Volumen y Voz
+                case 4: // Ajustes de Volumen y Voz
                     _engine.CurrentState = GameState.SettingsMenu;
                     OpenSettingsMenu();
                     break;
 
-                case 6: // Salir
+                case 5: // Salir
                     _engine.RequestExit();
                     break;
             }

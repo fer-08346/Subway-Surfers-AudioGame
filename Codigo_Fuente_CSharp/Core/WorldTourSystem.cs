@@ -25,6 +25,22 @@ namespace SubwaySurfersAudioGame.Core
             }
         }
 
+        public void AdvanceStageManually(GameEngine engine)
+        {
+            AdvanceToNextCountry(engine.Player.Z, engine);
+        }
+
+        public void PreviousStageManually(GameEngine engine)
+        {
+            int trackCount = engine.Music.Tracks.Count;
+            if (trackCount == 0) return;
+            CurrentStageIndex = (CurrentStageIndex - 1 + trackCount) % trackCount;
+            var track = engine.Music.Tracks[CurrentStageIndex];
+            engine.Music.PlayTrack(CurrentStageIndex);
+            engine.AudioEngine.Play2D(AudioMap.UI.TopRunCelebration, gain: 0.85f);
+            engine.Accessibility.Speak($"Etapa de prueba: ¡Bienvenidos a {track.CityName}!", interrupt: true);
+        }
+
         private void AdvanceToNextCountry(float currentDistance, GameEngine engine)
         {
             CurrentStageIndex++;

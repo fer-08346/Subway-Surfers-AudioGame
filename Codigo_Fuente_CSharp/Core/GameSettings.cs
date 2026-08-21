@@ -33,19 +33,38 @@ namespace SubwaySurfersAudioGame.Core
 
     public static class GameSettings
     {
-        private static string GetConfigPath()
+        public static string GetConfigPath()
         {
-            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string gameFolder = Path.Combine(appData, "SubwaySurfersAudioGame");
+            if (!Directory.Exists(gameFolder))
+            {
+                Directory.CreateDirectory(gameFolder);
+            }
+            return Path.Combine(gameFolder, "config.json");
         }
 
         public static GameSettingsData Load()
         {
             try
             {
-                string path = GetConfigPath();
-                if (File.Exists(path))
+                string appDataPath = GetConfigPath();
+                string legacyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
+
+                // Auto-Migration: If no config exists in AppData yet, but an old config exists in the game folder,
+                // automatically migrate it to AppData so the user preserves all their coins and upgrades seamlessly!
+                if (!File.Exists(appDataPath) && File.Exists(legacyPath))
                 {
-                    string json = File.ReadAllText(path);
+                    try
+                    {
+                        File.Copy(legacyPath, appDataPath, overwrite: true);
+                    }
+                    catch { }
+                }
+
+                if (File.Exists(appDataPath))
+                {
+                    string json = File.ReadAllText(appDataPath);
                     var data = JsonSerializer.Deserialize<GameSettingsData>(json);
                     if (data != null) return data;
                 }
