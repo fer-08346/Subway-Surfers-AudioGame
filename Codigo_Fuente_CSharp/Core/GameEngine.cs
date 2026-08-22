@@ -206,6 +206,9 @@ namespace SubwaySurfersAudioGame.Core
             // 2. Update 3D Listener Coords
             AudioEngine.UpdateListener(Player.CurrentX, Player.Y, Player.Z, Player.Speed);
 
+            // 2.1 Refresh Dolby Atmos object treatment (air absorption / elevation) for all active 3D objects
+            AudioEngine.UpdateSpatialObjects();
+
             // 3. Dynamic Speed Wind layer scaling with velocity
             AudioEngine.UpdateSpeedWind(Player.Speed);
 
@@ -784,7 +787,10 @@ namespace SubwaySurfersAudioGame.Core
             if (PendingUpdate == null) return;
 
             Accessibility.Speak("Descargando actualización, por favor espera...", interrupt: true);
-            string? extracted = await UpdateChecker.DownloadAndPrepareUpdateAsync(PendingUpdate.DownloadUrl);
+            string? extracted = await UpdateChecker.DownloadAndPrepareUpdateAsync(
+                PendingUpdate.DownloadUrl,
+                percent => Console.WriteLine($"[Update] Descarga de actualización: {percent}%"));
+
             if (extracted == null)
             {
                 Accessibility.Speak("No se pudo descargar la actualización. Inténtalo de nuevo más tarde.", interrupt: true);
@@ -793,6 +799,31 @@ namespace SubwaySurfersAudioGame.Core
 
             Accessibility.Speak("Actualización lista. El juego se reiniciará para instalarla.", interrupt: true);
             ApplyUpdateAndRestart(extracted);
+        }
+
+        /// <summary>
+        /// Manually checks GitHub for a newer release (from the Settings menu) and reports the result
+        /// by voice. If a newer release exists, it is queued as PendingUpdate so the U key can install it.
+        /// </summary>
+        public async Task ManualUpdateCheck()
+        {
+            if (CurrentState == GameState.InGame) return;
+
+            Accessibility.Speak("Buscando actualizaciones en GitHub, por favor espera...", interrupt: true);
+            var info = await UpdateChecker.CheckForUpdateAsync();
+            if (info != null)
+            {
+                PendingUpdate = info;
+                Music.PlayTrack(0);
+                Accessibility.Speak(
+                    $"¡Hay una actualización disponible! Versión {info.Version}. " +
+                    $"Pulsa la tecla U para actualizar mientras suena la música.",
+                    interrupt: false);
+            }
+            else
+            {
+                Accessibility.Speak($"Tu juego ya está actualizado a la versión {GameInfo.CurrentVersion}.", interrupt: true);
+            }
         }
 
         private void ApplyUpdateAndRestart(string extractedDir)
