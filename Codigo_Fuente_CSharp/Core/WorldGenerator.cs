@@ -155,7 +155,7 @@ namespace SubwaySurfersAudioGame.Core
                     if (!dt.HornPlayed && (dt.Z - playerZ) < 45.0f && (dt.Z - playerZ) > 0f)
                     {
                         dt.HornPlayed = true;
-                        audioEngine.Play3D(AudioMap.Obstacles.TrainApproaching, dt.X, dt.Y, dt.Z, velZ: -dt.Speed, gain: 0.9f);
+                        audioEngine.Play3D(AudioMap.Obstacles.TrainApproaching, dt.X, dt.Y, dt.Z, velZ: -dt.Speed, gain: 0.9f, isVolumetric: true);
                     }
 
                     // Update engine loop instance position if active

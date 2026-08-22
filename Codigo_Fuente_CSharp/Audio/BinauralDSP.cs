@@ -96,6 +96,70 @@ namespace SubwaySurfersAudioGame.Audio
         }
 
         /// <summary>
+        /// Dolby Atmos object-based audio: minimum 3D distance (acoustic size) of a sound source.
+        /// Point sources (coins, footsteps) are tight; volumetric bodies (long trains) keep their
+        /// full presence across a wider radius, behaving like a large acoustic object in the scene.
+        /// </summary>
+        public static float GetObjectMinDistance(bool isVolumetric) => isVolumetric ? 6.0f : 2.0f;
+
+        /// <summary>
+        /// Dolby Atmos object-based audio: extra distance-dependent volume attenuation modeling
+        /// physical air absorption. Below 14 m the air is transparent (factor 1.0); beyond that the
+        /// brilliance of the object fades exponentially with distance, just like real-world propagation.
+        /// </summary>
+        public static float CalculateAirAbsorptionGain(float distance)
+        {
+            if (distance <= 14.0f) return 1.0f;
+            float gain = MathF.Exp(-(distance - 14.0f) / 90.0f);
+            return Math.Clamp(gain, 0.55f, 1.0f);
+        }
+
+        /// <summary>
+        /// Dolby Atmos object-based audio: subtle pitch downshift that emulates the high-frequency
+        /// muffling produced by air absorption on distant objects when no true low-pass filter is
+        /// available (it is used as a safe fallback; the engine prefers a real DSP/BQF low-pass).
+        /// </summary>
+        public static float CalculateAirAbsorptionPitch(float distance)
+        {
+            if (distance <= 14.0f) return 1.0f;
+            float pitch = 1.0f - Math.Min(0.10f, (distance - 14.0f) / 360.0f);
+            return Math.Clamp(pitch, 0.9f, 1.0f);
+        }
+
+        /// <summary>
+        /// Dolby Atmos object-based audio: real low-pass cutoff frequency (Hz) modeling the high-frequency
+        /// roll-off caused by air absorption. Objects nearer than 14 m keep full brilliance (20 kHz);
+        /// distant objects fade their highs exponentially, like real-world propagation.
+        /// </summary>
+        public static float CalculateAirAbsorptionCutoff(float distance)
+        {
+            if (distance <= 14.0f) return 20000.0f;
+            float cutoff = 20000.0f * MathF.Exp(-(distance - 14.0f) / 26.0f);
+            return Math.Clamp(cutoff, 1200.0f, 20000.0f);
+        }
+
+        /// <summary>
+        /// Dolby Atmos object-based audio: elevation tilt applied to the effective gain of a source.
+        /// The human auditory system perceives objects clearly above or below the listener as slightly
+        /// more diffuse, so we apply a gentle spectral/elevation-aware attenuation for vertical offset.
+        /// </summary>
+        public static float CalculateElevationTilt(float sourceY, float listenerY)
+        {
+            float elevationDiff = MathF.Abs(sourceY - listenerY);
+            if (elevationDiff <= 1.0f) return 1.0f;
+            float tilt = 1.0f - MathF.Min(0.30f, (elevationDiff - 1.0f) * 0.05f);
+            return Math.Clamp(tilt, 0.7f, 1.0f);
+        }
+
+        /// <summary>
+        /// Dolby Atmos object-based audio: combined spatial gain of an object (air absorption + elevation).
+        /// </summary>
+        public static float CalculateObjectSpatialGain(float distance, float sourceY, float listenerY)
+        {
+            return CalculateAirAbsorptionGain(distance) * CalculateElevationTilt(sourceY, listenerY);
+        }
+
+        /// <summary>
         /// Butterworth Low-Pass filter coefficient calculator.
         /// </summary>
         public static (float a0, float a1, float a2, float b1, float b2) GetLowPassCoefficients(float cutoffHz, int sampleRate = 44100)

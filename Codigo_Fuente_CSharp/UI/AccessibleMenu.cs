@@ -28,6 +28,7 @@ namespace SubwaySurfersAudioGame.UI
             "Volumen de Efectos de Sonido",
             "Sistema de Voz y Lector de Pantalla",
             "Nivel de Dificultad",
+            "Buscar Actualizaciones",
             "Volver al Menú Principal"
         };
 
@@ -240,7 +241,8 @@ namespace SubwaySurfersAudioGame.UI
 
                     case ConsoleKey.Enter:
                     case ConsoleKey.Spacebar:
-                        if (_selectedSettingsIndex == 4) OpenMainMenu();
+                        if (_selectedSettingsIndex == 4) _ = _engine.ManualUpdateCheck();
+                        else if (_selectedSettingsIndex == 5) OpenMainMenu();
                         break;
 
                     case ConsoleKey.Escape:
